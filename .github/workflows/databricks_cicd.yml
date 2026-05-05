@@ -1,0 +1,21 @@
+validate:
+  name: Validate Bundle
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Databricks CLI
+      uses: databricks/setup-cli@main
+
+    - name: Validate Bundle
+      env:
+        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]]; then
+          TARGET="prod"
+        else
+          TARGET="dev"
+        fi
+        echo "Validating with target: $TARGET"
+        databricks bundle validate -t $TARGET
