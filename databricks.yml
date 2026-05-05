@@ -1,0 +1,60 @@
+# databricks.yml (root of your repo)
+bundle:
+  name: medallion_pipeline
+
+workspace:
+  host: https://dbc-f969e226-8a8e.cloud.databricks.com/browse?o=7474649676333294
+
+targets:
+  dev:
+    mode: development
+    workspace:
+      root_path: /Workspace/Users/konduruvijay29@gmail.com/db-sales-repo
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/konduruvijay29@gmail.com/db-sales-repo
+
+resources:
+  jobs:
+    medallion_pipeline_job:
+      name: "Medallion Pipeline - ${bundle.target}"
+      tasks:
+        - task_key: bronze
+          notebook_task:
+            notebook_path: ./notebooks/01_bronze_layer
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+
+        - task_key: silver
+          depends_on:
+            - task_key: bronze
+          notebook_task:
+            notebook_path: ./notebooks/02_silver_layer
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+
+        - task_key: gold
+          depends_on:
+            - task_key: silver
+          notebook_task:
+            notebook_path: ./notebooks/03_gold_layer
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+
+        - task_key: postgres_export
+          depends_on:
+            - task_key: gold
+          notebook_task:
+            notebook_path: ./notebooks/04_postgres_export
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
