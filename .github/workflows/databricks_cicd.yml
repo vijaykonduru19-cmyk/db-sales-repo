@@ -1,74 +1,21 @@
-# .github/workflows/databricks_cicd.yml
+validate:
+  name: Validate Bundle
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v3
 
-name: Databricks CI/CD Pipeline
+    - name: Setup Databricks CLI
+      uses: databricks/setup-cli@main
 
-on:
-  push:
-    branches: [main, dev]
-  pull_request:
-    branches: [main]
-
-jobs:
-  validate:
-    name: Validate Bundle
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main
-
-      - name: Set Target
-        id: set-target
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "target=prod" >> $GITHUB_OUTPUT
-          else
-            echo "target=dev" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Validate Bundle
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: databricks bundle validate -t ${{ steps.set-target.outputs.target }}
-
-  deploy-dev:
-    name: Deploy to Dev
-    needs: validate
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main
-
-      - name: Deploy to Dev
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
-        run: databricks bundle deploy -t dev
-
-  deploy-prod:
-    name: Deploy to Production
-    needs: validate
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main
-
-      - name: Deploy to Production
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
-        run: databricks bundle deploy -t prod
-
-      - name: Run Pipeline Job
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
-        run: databricks bundle run medallion_pipeline_job -t prod
+    - name: Validate Bundle
+      env:
+        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]]; then
+          TARGET="prod"
+        else
+          TARGET="dev"
+        fi
+        echo "Validating with target: $TARGET"
+        databricks bundle validate -t $TARGET
