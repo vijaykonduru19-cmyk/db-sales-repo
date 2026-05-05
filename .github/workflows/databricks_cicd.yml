@@ -20,7 +20,7 @@ jobs:
 
       - name: Validate Bundle
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_HOST: "https://dbc-f969e226-8a8e.cloud.databricks.com/?o=7474649676333294"
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: databricks bundle validate
 
